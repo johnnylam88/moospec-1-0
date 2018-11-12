@@ -1,0 +1,16 @@
+## Interface: 80000
+## Version: @project-version@
+
+## Title: MooSpec-1.0
+## Notes: Library to provide information about player specializations and roles.
+
+## Author: Johnny C. Lam
+## X-Category: Library
+## X-License: BSD License
+## X-Website: https://github.com/ultijlam/moospec-1-0
+## X-Curse-Project-ID: 306885
+
+## OptionalDependencies: LibStub, CallbackHandler-1.0, MooInspect-1.0, MooUnit-1.0
+
+embeds.xml
+MooSpec-1.0.xml
