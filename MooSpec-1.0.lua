@@ -330,19 +330,25 @@ end
 
 local function UpdateRole(guid, unit, role)
 	local oldRole = lib:GetRole(guid)
-	if oldRole ~= role then
-		roleByGUID[guid] = role
-		debug(2, "MooSpec_UnitRoleChanged", guid, unit, oldRole, role)
-		lib.callbacks:Fire("MooSpec_UnitRoleChanged", guid, unit, oldRole, role)
+	if role and role ~= "none" then
+		-- Only update the role if it's not "none".
+		if oldRole ~= role then
+			roleByGUID[guid] = role
+			debug(2, "MooSpec_UnitRoleChanged", guid, unit, oldRole, role)
+			lib.callbacks:Fire("MooSpec_UnitRoleChanged", guid, unit, oldRole, role)
+		end
 	end
 end
 
 local function UpdateSpecialization(guid, unit, specialization)
 	local oldSpecialization = lib:GetSpecialization(guid)
-	if oldSpecialization ~= specialization then
-		specializationByGUID[guid] = specialization
-		debug(2, "MooSpec_UnitSpecializationChanged", guid, unit, oldSpecialization, specialization)
-		lib.callbacks:Fire("MooSpec_UnitSpecializationChanged", guid, unit, oldSpecialization, specialization)
+	if specialization and roleBySpecialization[specialization] then
+		-- Only update the specialization if it can be validated as a possible specialization ID.
+		if oldSpecialization ~= specialization then
+			specializationByGUID[guid] = specialization
+			debug(2, "MooSpec_UnitSpecializationChanged", guid, unit, oldSpecialization, specialization)
+			lib.callbacks:Fire("MooSpec_UnitSpecializationChanged", guid, unit, oldSpecialization, specialization)
+		end
 	end
 end
 
@@ -352,7 +358,7 @@ local function UpdateUnit(guid, unit)
 		if UnitIsPlayer(unit) then
 			debug(3, "UpdateUnit", guid, unit)
 			local specialization = GetInspectSpecialization(unit)
-			-- Validate the return value against the table of possible IDs.
+			-- Validate the return value against the table of possible specialization IDs.
 			if not roleBySpecialization[specialization] then
 				local _, class = UnitClass(unit)
 				debug(1, "Unknown player specialization:", guid, class, specialization)
