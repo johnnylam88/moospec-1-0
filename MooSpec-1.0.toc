@@ -9,6 +9,7 @@
 ## X-License: BSD License
 ## X-Website: https://github.com/ultijlam/moospec-1-0
 ## X-Curse-Project-ID: 306885
+## X-WoWI-ID: 24856
 
 ## OptionalDependencies: LibStub, CallbackHandler-1.0, MooInspect-1.0, MooUnit-1.0
 
