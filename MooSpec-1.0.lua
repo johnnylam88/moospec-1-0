@@ -209,7 +209,7 @@ local roleBySpecialization = {
 	-- Paladin
 	[65] = "healer", -- "Holy
 	[66] = "tank", -- "Protection
-	[67] = "melee", -- "Retribution
+	[70] = "melee", -- "Retribution
 	-- Priest
 	[256] = "healer", -- Discipline
 	[257] = "healer", -- Holy
@@ -261,7 +261,7 @@ local specializationName = {
 	-- Paladin
 	[65] = "holy",
 	[66] = "protection",
-	[67] = "restribution",
+	[70] = "retribution",
 	-- Priest
 	[256] = "discipline",
 	[257] = "holy",
