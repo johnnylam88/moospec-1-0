@@ -11,6 +11,7 @@
 ## X-Curse-Project-ID: 306885
 ## X-WoWI-ID: 24856
 
+## X-Embeds: MooInspect-1.0, MooUnit-1.0
 ## OptionalDependencies: LibStub, CallbackHandler-1.0, MooInspect-1.0, MooUnit-1.0
 
 embeds.xml
