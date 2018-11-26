@@ -150,8 +150,11 @@ end
 ------------------------------------------------------------------------
 
 -- GLOBALS: GetInspectSpecialization
+-- GLOBALS: GetSpecialization
+-- GLOBALS: GetSpecializationInfo
 -- GLOBALS: UnitClass
 -- GLOBALS: UnitGroupRolesAssigned
+-- GLOBALS: UnitGUID
 -- GLOBALS: UnitIsPlayer
 
 -- Preserve mappings across library upgrades.
@@ -162,6 +165,8 @@ local specializationByGUID = lib.specializationByGUID or {}
 lib.blizzardRoleByGUID = blizzardRoleByGUID
 lib.roleByGUID = roleByGUID
 lib.specializationByGUID = specializationByGUID
+
+local playerGUID = UnitGUID("player")
 
 -- Default roles for each class.
 local roleByClass = {
@@ -355,19 +360,30 @@ end
 local function UpdateUnit(guid, unit)
 	unit = unit or MooUnit:GetUnitByGUID(guid)
 	if unit then
-		if UnitIsPlayer(unit) then
+		local specialization
+		if guid == playerGUID then
+			-- The player's specialization information doesn't need to come through the
+			-- inspection API -- use GetSpecialization() directly.
+			local index = GetSpecialization()
+			if index then
+				specialization = GetSpecializationInfo(index)
+			end
+		elseif UnitIsPlayer(unit) then
+			specialization = GetInspectSpecialization(unit)
+		end
+		if specialization then
 			debug(3, "UpdateUnit", guid, unit)
-			local specialization = GetInspectSpecialization(unit)
 			-- Validate the return value against the table of possible specialization IDs.
-			if not roleBySpecialization[specialization] then
+			if roleBySpecialization[specialization] then
+				UpdateSpecialization(guid, unit, specialization)
+				local role = roleBySpecialization[specialization]
+				UpdateRole(guid, unit, role)
+				local blizzardRole = lib:GetBlizzardRole(guid)
+				UpdateBlizzardRole(guid, unit, blizzardRole)
+			else
 				local _, class = UnitClass(unit)
 				debug(1, "Unknown player specialization:", guid, class, specialization)
 			end
-			UpdateSpecialization(guid, unit, specialization)
-			local role = roleBySpecialization[specialization]
-			UpdateRole(guid, unit, role)
-			local blizzardRole = lib:GetBlizzardRole(guid)
-			UpdateBlizzardRole(guid, unit, blizzardRole)
 		end
 	else
 		-- GUID no longer maps to a usable unit ID.
@@ -379,10 +395,14 @@ end
 
 -- GLOBALS: UnitGUID
 -- GLOBALS: UnitIsPlayer
+-- GLOBALS: UnitIsUnit
 
 local function OnUnitSpecializationChanged(event, unit)
 	debug(3, "OnUnitSpecializationChanged", event, unit)
-	if UnitIsPlayer(unit) then
+	if unit == "player" or UnitIsUnit(unit, "player") then
+		-- No need to inspect the player as the specialization info is already available.
+		UpdateUnit(playerGUID, "player")
+	elseif UnitIsPlayer(unit) then
 		local guid = UnitGUID(unit)
 		if guid then
 			MooInspect:QueueInspect(guid)
