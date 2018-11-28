@@ -437,19 +437,23 @@ function eventFrame:OnInspectReady(event, guid)
 	UpdateUnit(guid)
 end
 
+local function QueueUnit(guid, unit)
+	-- Set a default role if this unit had no previous role.
+	local role = lib:GetRole(guid)
+	if role == "none" then
+		local _, class = UnitClass(unit)
+		if class then
+			role = roleByClass[class]
+			UpdateRole(guid, unit, role)
+		end
+	end
+	MooInspect:QueueInspect(guid)
+end
+
 function eventFrame:OnUnitJoined(event, guid, unit)
 	if UnitIsPlayer(unit) then
 		debug(3, "OnUnitJoined", event, guid, unit)
-		-- Set a default role if this unit had no previous role.
-		local role = lib:GetRole(guid)
-		if role == "none" then
-			local _, class = UnitClass(unit)
-			if class then
-				role = roleByClass[class]
-				UpdateRole(guid, unit, role)
-			end
-		end
-		MooInspect:QueueInspect(guid)
+		QueueUnit(guid, unit)
 	end
 end
 
@@ -461,7 +465,12 @@ function eventFrame:OnUnitLeft(event, guid)
 	specializationByGUID[guid] = nil
 end
 
-eventFrame.OnUnitChanged = eventFrame.OnUnitJoined
+function eventFrame:OnUnitChanged(event, guid, unit, name)
+	if MooUnit:IsGroupUnit(unit) and UnitIsPlayer(unit) then
+		debug(3, "OnUnitChanged", event, guid, unit, name)
+		QueueUnit(guid, unit)
+	end
+end
 
 ------------------------------------------------------------------------
 
