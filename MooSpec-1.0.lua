@@ -6,7 +6,7 @@
 -- GLOBALS: assert
 -- GLOBALS: LibStub
 
-local MAJOR, MINOR = "MooSpec-1.0", 4
+local MAJOR, MINOR = "MooSpec-1.0", 5
 assert(LibStub, MAJOR .. " requires LibStub")
 assert(LibStub("CallbackHandler-1.0", true), MAJOR .. " requires CallbackHandler-1.0")
 assert(LibStub("MooInspect-1.0", true), MAJOR .. " requires MooInspect-1.0")
