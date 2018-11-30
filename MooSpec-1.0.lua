@@ -159,10 +159,12 @@ end
 
 -- Preserve mappings across library upgrades.
 local blizzardRoleByGUID = lib.blizzardRoleByGUID or {}
+local classByGUID = lib.classByGUID or {}
 local roleByGUID = lib.roleByGUID or {}
 local specializationByGUID = lib.specializationByGUID or {}
 
 lib.blizzardRoleByGUID = blizzardRoleByGUID
+lib.classByGUID = classByGUID
 lib.roleByGUID = roleByGUID
 lib.specializationByGUID = specializationByGUID
 
@@ -297,33 +299,6 @@ local blizzardRoleByRole = {
 	none = "NONE",
 }
 
-function lib:GetBlizzardRole(guid)
-	if not blizzardRoleByGUID[guid] then
-		local unit = MooUnit:GetUnitByGUID(guid)
-		if unit then
-			blizzardRoleByGUID[guid] = UnitGroupRolesAssigned(unit)
-		end
-	end
-	return blizzardRoleByGUID[guid] or "NONE"
-end
-
-function lib:GetRole(guid)
-	return roleByGUID[guid] or "none"
-end
-
-function lib:GetSpecialization(guid)
-	local specialization = specializationByGUID[guid]
-	if specialization then
-		local name = self:GetSpecializationName(specialization)
-		return specialization, name
-	end
-	return nil
-end
-
-function lib:GetSpecializationName(specialization)
-	return specializationName[specialization]
-end
-
 local function UpdateBlizzardRole(guid, unit, role)
 	local oldRole = blizzardRoleByGUID[guid] or "NONE"
 	if oldRole ~= role then
@@ -334,7 +309,7 @@ local function UpdateBlizzardRole(guid, unit, role)
 end
 
 local function UpdateRole(guid, unit, role)
-	local oldRole = lib:GetRole(guid)
+	local oldRole = roleByGUID[guid] or "none"
 	if role and role ~= "none" then
 		-- Only update the role if it's not "none".
 		if oldRole ~= role then
@@ -346,13 +321,30 @@ local function UpdateRole(guid, unit, role)
 end
 
 local function UpdateSpecialization(guid, unit, specialization)
-	local oldSpecialization = lib:GetSpecialization(guid)
+	local oldSpecialization = specializationByGUID[guid] or 0 -- zero seems to mean "can't get specialization"
 	if specialization and roleBySpecialization[specialization] then
 		-- Only update the specialization if it can be validated as a possible specialization ID.
 		if oldSpecialization ~= specialization then
 			specializationByGUID[guid] = specialization
 			debug(2, "MooSpec_UnitSpecializationChanged", guid, unit, oldSpecialization, specialization)
 			lib.callbacks:Fire("MooSpec_UnitSpecializationChanged", guid, unit, oldSpecialization, specialization)
+		end
+	end
+end
+
+local function UpdateClass(guid, unit)
+	-- Only update class if it hasn't been determined yet.
+	if not classByGUID[guid] then
+		local _, class = UnitClass(unit)
+		if class then
+			classByGUID[guid] = class
+			-- Set a default role if this unit had no previous role.
+			if not roleByGUID[guid] then
+				local role = roleByClass[class]
+				UpdateRole(guid, unit, role)
+			end
+			debug(2, "MooSpec_UnitClass", guid, unit, class)
+			lib.callbacks:Fire("MooSpec_UnitClass", guid, unit, class)
 		end
 	end
 end
@@ -381,7 +373,7 @@ local function UpdateUnit(guid, unit)
 				local blizzardRole = lib:GetBlizzardRole(guid)
 				UpdateBlizzardRole(guid, unit, blizzardRole)
 			else
-				local _, class = UnitClass(unit)
+				local class = lib:GetClass(guid)
 				debug(1, "Unknown player specialization:", guid, class, specialization)
 			end
 		end
@@ -389,6 +381,37 @@ local function UpdateUnit(guid, unit)
 		-- GUID no longer maps to a usable unit ID.
 		eventFrame:OnUnitLeft("UpdateUnit", guid)
 	end
+end
+
+function lib:GetClass(guid)
+	return classByGUID[guid]
+end
+
+function lib:GetBlizzardRole(guid)
+	if not blizzardRoleByGUID[guid] then
+		local unit = MooUnit:GetUnitByGUID(guid)
+		if unit then
+			blizzardRoleByGUID[guid] = UnitGroupRolesAssigned(unit)
+		end
+	end
+	return blizzardRoleByGUID[guid] or "NONE"
+end
+
+function lib:GetRole(guid)
+	return roleByGUID[guid] or "none"
+end
+
+function lib:GetSpecialization(guid)
+	local specialization = specializationByGUID[guid]
+	if specialization then
+		local name = self:GetSpecializationName(specialization)
+		return specialization, name
+	end
+	return nil
+end
+
+function lib:GetSpecializationName(specialization)
+	return specializationName[specialization]
 end
 
 ------------------------------------------------------------------------
@@ -401,6 +424,7 @@ local function OnUnitSpecializationChanged(event, unit)
 	debug(3, "OnUnitSpecializationChanged", event, unit)
 	if unit == "player" or UnitIsUnit(unit, "player") then
 		-- No need to inspect the player as the specialization info is already available.
+		UpdateClass(playerGUID, "player")
 		UpdateUnit(playerGUID, "player")
 	elseif UnitIsPlayer(unit) then
 		local guid = UnitGUID(unit)
@@ -441,7 +465,7 @@ local function QueueUnit(guid, unit)
 	-- Set a default role if this unit had no previous role.
 	local role = lib:GetRole(guid)
 	if role == "none" then
-		local _, class = UnitClass(unit)
+		local class = lib:GetClass(guid)
 		if class then
 			role = roleByClass[class]
 			UpdateRole(guid, unit, role)
@@ -453,6 +477,7 @@ end
 function eventFrame:OnUnitJoined(event, guid, unit)
 	if UnitIsPlayer(unit) then
 		debug(3, "OnUnitJoined", event, guid, unit)
+		UpdateClass(guid, unit)
 		QueueUnit(guid, unit)
 	end
 end
@@ -461,6 +486,7 @@ function eventFrame:OnUnitLeft(event, guid)
 	debug(3, "OnUnitLeft", event, guid)
 	MooInspect:CancelInspect(guid)
 	blizzardRoleByGUID[guid] = nil
+	classByGUID[guid] = nil
 	roleByGUID[guid] = nil
 	specializationByGUID[guid] = nil
 end
@@ -468,6 +494,7 @@ end
 function eventFrame:OnUnitChanged(event, guid, unit, name)
 	if MooUnit:IsGroupUnit(unit) and UnitIsPlayer(unit) then
 		debug(3, "OnUnitChanged", event, guid, unit, name)
+		UpdateClass(guid, unit)
 		QueueUnit(guid, unit)
 	end
 end

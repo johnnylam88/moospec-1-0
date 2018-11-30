@@ -29,6 +29,32 @@ Returns the assigned role for the GUID in a group formed via the Dungeon Finder,
 
 * `blizzardRole` - string: `"TANK"`, `"HEALER"`, `"DAMAGER"`, `"NONE"`
 
+### GetClass
+
+Returns the class for the GUID.
+
+    class = lib:GetClass(guid)
+
+#### Arguments:
+
+* `guid` - string: [GUID][]
+
+#### Returns:
+
+* `class` - string: a class token, one of:
+  * `"DEATHKNIGHT"`
+  * `"DEMONHUNTER"`
+  * `"DRUID"`
+  * `"HUNTER"`
+  * `"MAGE"`
+  * `"MONK"`
+  * `"PALADIN"`
+  * `"PRIEST"`
+  * `"ROGUE"`
+  * `"SHAMAN"`
+  * `"WARLOCK"`
+  * `"WARRIOR"`
+
 ### GetRole
 
 Returns the role for the GUID as determined by class and specialization.  This differentiates between melee and ranged DPS specializations.
@@ -135,6 +161,16 @@ Fires when the assigned role in a group formed via the Dungeon Finder or the rol
 * `unit` - string: [unit ID], e.g., `"player"`, `"target"`, `"raid15"`, etc.
 * `oldRole` - string: the previous assigned role, see [GetBlizzardRole](#getblizzardrole)
 * `newRole` - string: the current assigned role, see [GetBlizzardRole](#getblizzardrole)
+
+### MooSpec_UnitClass
+
+Fires when the class for a unit has been resolved.
+
+#### Arguments:
+
+* `guid` - string: [GUID][] of the unit whose role has changed
+* `unit` - string: [unit ID], e.g., `"player"`, `"target"`, `"raid15"`, etc.
+* `class` - string: a class token, see [GetClass](#getclass)
 
 ### MooSpec_UnitRoleChanged
 
