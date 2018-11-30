@@ -335,16 +335,19 @@ end
 local function UpdateClass(guid, unit)
 	-- Only update class if it hasn't been determined yet.
 	if not classByGUID[guid] then
-		local _, class = UnitClass(unit)
-		if class then
-			classByGUID[guid] = class
-			-- Set a default role if this unit had no previous role.
-			if not roleByGUID[guid] then
-				local role = roleByClass[class]
-				UpdateRole(guid, unit, role)
+		unit = unit or MooUnit:GetUnitByGUID(guid)
+		if unit then
+			local _, class = UnitClass(unit)
+			if class then
+				classByGUID[guid] = class
+				-- Set a default role if this unit had no previous role.
+				if not roleByGUID[guid] then
+					local role = roleByClass[class]
+					UpdateRole(guid, unit, role)
+				end
+				debug(2, "MooSpec_UnitClass", guid, unit, class)
+				lib.callbacks:Fire("MooSpec_UnitClass", guid, unit, class)
 			end
-			debug(2, "MooSpec_UnitClass", guid, unit, class)
-			lib.callbacks:Fire("MooSpec_UnitClass", guid, unit, class)
 		end
 	end
 end
@@ -384,6 +387,7 @@ local function UpdateUnit(guid, unit)
 end
 
 function lib:GetClass(guid)
+	UpdateClass(guid)
 	return classByGUID[guid]
 end
 
@@ -458,11 +462,13 @@ end
 
 function eventFrame:OnInspectReady(event, guid)
 	debug(3, event, guid)
+	UpdateClass(guid)
 	UpdateUnit(guid)
 end
 
 local function QueueUnit(guid, unit)
 	-- Set a default role if this unit had no previous role.
+	UpdateClass(guid, unit)
 	local role = lib:GetRole(guid)
 	if role == "none" then
 		local class = lib:GetClass(guid)
@@ -504,28 +510,21 @@ end
 -- GLOBALS: UnitGUID
 -- GLOBALS: UnitIsPlayer
 
-local function InspectUnit(guid, unit)
-	if guid or unit then
-		if guid then
-			unit = unit or MooUnit:GetUnitByGUID(guid)
-		else -- if unit then
-			guid = guid or UnitGUID(unit)
-		end
-	end
-	if UnitIsPlayer(unit) then
-		MooInspect:QueueInspect(guid)
-	end
-end
-
 function lib:InspectUnit(unit)
-	local guid = UnitGUID(unit)
-	if guid then
-		InspectUnit(guid, unit)
+	if UnitIsPlayer(unit) then
+		local guid = UnitGUID(unit)
+		if guid then
+			UpdateClass(guid, unit)
+			QueueUnit(guid, unit)
+		end
 	end
 end
 
 function lib:InspectRoster()
 	for guid, unit in MooUnit:IterateRoster() do
-		InspectUnit(guid, unit)
+		if UnitIsPlayer(unit) then
+			UpdateClass(guid, unit)
+			QueueUnit(guid, unit)
+		end
 	end
 end
