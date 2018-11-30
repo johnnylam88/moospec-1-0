@@ -15,7 +15,7 @@ __MooSpec-1.0__ can also inspect player units that are outside of the group as l
 API Methods
 -----------
 
-### [GetBlizzardRole](#getblizzardrole)
+### GetBlizzardRole
 
 Returns the assigned role for the GUID in a group formed via the Dungeon Finder, or the role manually assigned in a raid group.
 
@@ -29,7 +29,7 @@ Returns the assigned role for the GUID in a group formed via the Dungeon Finder,
 
 * `blizzardRole` - string: `"TANK"`, `"HEALER"`, `"DAMAGER"`, `"NONE"`
 
-### [GetRole](#getrole)
+### GetRole
 
 Returns the role for the GUID as determined by class and specialization.  This differentiates between melee and ranged DPS specializations.
 
