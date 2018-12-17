@@ -402,6 +402,7 @@ function lib:GetBlizzardRole(guid)
 end
 
 function lib:GetRole(guid)
+	UpdateClass(guid)
 	return roleByGUID[guid] or "none"
 end
 
